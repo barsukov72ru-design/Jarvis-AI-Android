@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK with Briefcase
 
 on:
   push:
@@ -23,38 +23,19 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Install Buildozer dependencies
+    - name: Install Briefcase
       run: |
         pip install --upgrade pip
-        pip install "cython<3.0.0" buildozer plyer requests urllib3 certifi
+        pip install briefcase
 
-    # ПОЛНОЕ СОЗДАНИЕ ВСЕЙ СТРУКТУРЫ ПАПОК ДЛЯ БУЛЬДОЗЕРА
-    - name: Manually Create Absolute Android SDK Structure
+    # Создаем и компилируем Android проект без использования капризного Buildozer
+    - name: Package App for Android
       run: |
-        # 1. Создаем папки для build-tools и tools/bin, которые он просит
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools/bin
-        
-        # 2. Копируем рабочий aidl в обе папки
-        cp /usr/local/lib/android/sdk/build-tools/34.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0/
-        cp /usr/local/lib/android/sdk/build-tools/34.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
-        
-        # 3. Делаем прямую ссылку на рабочий sdkmanager, чтобы обмануть проверку
-        ln -s /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-        
-        # 4. Даем полные права на запуск всем утилитам
-        chmod +x /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0/aidl
-        chmod +x /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/aidl
-        
-        echo "✅ Вся структура SDK создана вручную! sdkmanager и aidl на месте."
-
-    - name: Build with Buildozer
-      run: |
-        buildozer android debug
+        briefcase create android --no-input
+        briefcase build android --no-input
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: Jarvis-APK
-        path: bin/*.apk
+        path: build/jarvisapp/android/gradle/app/build/outputs/apk/debug/*.apk
