@@ -28,10 +28,19 @@ class JarvisScreen extends StatefulWidget {
   const JarvisScreen({super.key});
 
   @override
-  State<JarvisScreen> createState() => _JarvisScreenState();
+  Widget build(BuildContext context) {
+    return const _JarvisScreenContent();
+  }
 }
 
-class _JarvisScreenState extends State<JarvisScreen> {
+class _JarvisScreenContent extends StatefulWidget {
+  const _JarvisScreenContent();
+
+  @override
+  State<_JarvisScreenContent> createState() => _JarvisScreenContentState();
+}
+
+class _JarvisScreenContentState extends State<_JarvisScreenContent> {
   // Список сообщений чата
   List<Map<String, String>> _messages = [];
   final TextEditingController _controller = TextEditingController();
@@ -143,7 +152,7 @@ class _JarvisScreenState extends State<JarvisScreen> {
 
       if (response.statusCode == 200) {
         final List<dynamic> result = jsonDecode(utf8.decode(response.bodyBytes));
-        String rawRes = result[0]['generated_text'];
+        String rawRes = result['generated_text'];
         String aiResponse = rawRes.split("<|start_header_id|>assistant<|end_header_id|>\n").last.replaceAll("<|eot_id|>", "").trim();
         _addBotResponse(aiResponse);
       } else {
@@ -159,7 +168,7 @@ class _JarvisScreenState extends State<JarvisScreen> {
       _messages.add({"bot": text});
       _isLoading = false;
     });
-    _saveHistoryToDevice(); // Сохраняем ответ ИИ в телефон
+    _saveHistoryToDevice(); // Сохраняем ответ ИИ в память телефона
     _speak(text);
   }
 
@@ -176,7 +185,6 @@ class _JarvisScreenState extends State<JarvisScreen> {
         children: [
           Expanded(
             child: ListView.builder(
-              reverse: false,
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
@@ -213,18 +221,18 @@ class _JarvisScreenState extends State<JarvisScreen> {
                   child: TextField(
                     controller: _controller,
                     onSubmitted: (_) => _sendMessage(),
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Введите команду для Джарвиса...',
-                      hintStyle: const TextStyle(color: Colors.grey),
-                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.cyan)),
-                      border: const OutlineInputBorder(),
+                      hintStyle: TextStyle(color: Colors.grey),
+                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.cyan)),
+                      border: OutlineInputBorder(),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.send, color: Colors.cyan, size: 28),
-                  onPressed: _sendMessage,
+                  onPressed: _sendMessage, // ТУТ ВСЁ ИСПРАВЛЕНО НА ONPRESSED!
                 ),
               ],
             ),
