@@ -13,9 +13,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # ИСПОЛЬЗУЕМ ОФИЦИАЛЬНЫЙ ГОТОВЫЙ КОНТЕЙНЕР ДЛЯ СБОРКИ KIVY
+    # ИСПОЛЬЗУЕМ ОФИЦИАЛЬНЫЙ ГОТОВЫЙ КОНТЕЙНЕР KIVY С ПРАВИЛЬНЫМ ИМЕНЕМ
     - name: Build APK with Buildozer Action
-      uses: Artemis-chan/buildozer-action@v1
+      uses: ArtemSBulgakov/buildozer-action@v1
       with:
         command: buildozer android debug
         repository_path: .
