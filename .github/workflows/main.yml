@@ -25,27 +25,22 @@ jobs:
       with:
         channel: 'stable'
 
-    # НАДЕЖНЫЙ ФИКС: Используем современную структуру папок Flutter
+    # БЕЗОПАСНЫЙ ФИКС: Создаем проект рядом и копируем нужные папки
     - name: Create Flutter Project Structure
       run: |
-        # Временно прячем файлы
-        mkdir /tmp/jarvis_backup
-        mv main.dart pubspec.yaml /tmp/jarvis_backup/
+        # 1. Создаем чистый проект во временной папке снаружи репозитория
+        flutter create --org com.stark --project-name jarvis_ai --platforms=android /tmp/clean_project
         
-        # Полностью вычищаем текущую папку репозитория
-        rm -rf * .github
+        # 2. Переносим сгенерированную структуру Android к нам в репозиторий
+        cp -r /tmp/clean_project/android ./
+        mkdir -p lib
         
-        # Создаем проект
-        flutter create --org com.stark --project-name jarvis_ai --platforms=android . -v
-        
-        # Возвращаем файлы
-        rm lib/main.dart pubspec.yaml
-        mv /tmp/jarvis_backup/main.dart lib/main.dart
-        mv /tmp/jarvis_backup/pubspec.yaml ./pubspec.yaml
-        
-        # ЖЕЛЕЗОБЕТОННЫЙ ФИКС: Вместо sed прописываем minSdkVersion напрямую в local.properties
+        # 3. Настраиваем принудительный minSdkVersion
         echo "flutter.minSdkVersion=21" >> android/local.properties
-        echo "✅ Проект сгенерирован, local.properties обновлен!"
+        
+        # 4. Проверяем зависимости
+        flutter pub get
+        echo "✅ Чистая структура Android успешно развернута без удаления файлов!"
 
     - name: Build APK
       run: flutter build apk --release
