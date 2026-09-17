@@ -28,7 +28,14 @@ jobs:
         pip install --upgrade pip
         pip install "cython<3.0.0" buildozer plyer requests urllib3 certifi
 
-    # ПРАВИЛЬНЫЙ ФИКС: Передаем Buildozer пути к уже готовому Android SDK на сервере GitHub
+    # ХАКЕРСКИЙ ФИКС: Находим aidl в системе и принудительно создаем для Buildozer нужную папку
+    - name: Fix Android SDK Aidl Path
+      run: |
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0
+        cp /usr/local/lib/android/sdk/build-tools/34.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/ 2>/dev/null || \
+        cp /usr/local/lib/android/sdk/build-tools/*/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/ | head -n 1
+        echo "✅ Утилита aidl успешно скопирована в рабочее окружение!"
+
     - name: Build with Buildozer
       env:
         ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
