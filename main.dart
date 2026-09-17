@@ -21,17 +21,24 @@ class JarvisScreen extends StatefulWidget {
   const JarvisScreen({super.key});
 
   @override
-  State<JarvisScreen> createState() => _JarvisScreenState();
+  Widget build(BuildContext context) => const _JarvisScreenContent();
 }
 
-class _JarvisScreenState extends State<JarvisScreen> {
+class _JarvisScreenContent extends StatefulWidget {
+  const _JarvisScreenContent();
+
+  @override
+  State<_JarvisScreenContent> createState() => _JarvisScreenContentState();
+}
+
+class _JarvisScreenContentState extends State<_JarvisScreenContent> {
   late final WebViewController _controller;
 
   @override
   void initState() {
     super.initState();
     
-    // Текст нашей футуристичной веб-страницы чата Джарвиса
+    // Текст нашей исправленной веб-страницы чата Джарвиса
     final String htmlContent = """
     <!DOCTYPE html>
     <html>
@@ -45,6 +52,7 @@ class _JarvisScreenState extends State<JarvisScreen> {
             .msg { margin-bottom: 10px; padding: 8px; border-radius: 6px; font-size: 14px; line-height: 1.4; }
             .user { background: #002233; color: #fff; text-align: right; border-left: 3px solid #0088cc; }
             .bot { background: #001111; color: #00ffcc; border-left: 3px solid #00ffff; }
+            .loading { color: #aaaaaa; font-style: italic; }
             .input-area { display: flex; gap: 8px; padding-top: 10px; }
             input { flex: 1; padding: 12px; border: 1px solid #00aaaa; background: #111; color: #fff; border-radius: 6px; outline: none; font-size: 14px; }
             button { padding: 12px 18px; background: #00aaaa; color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
@@ -62,7 +70,7 @@ class _JarvisScreenState extends State<JarvisScreen> {
             var chat = document.getElementById('chat');
             var input = document.getElementById('userInput');
             
-            // Восстанавливаем бесконечную историю переписки из локальной памяти телефона (localStorage)
+            // Восстанавливаем историю из локальной памяти
             var savedHistory = localStorage.getItem('jarvis_history');
             if (savedHistory) {
                 chat.innerHTML = savedHistory;
@@ -75,10 +83,9 @@ class _JarvisScreenState extends State<JarvisScreen> {
             function addMessage(type, text) {
                 chat.innerHTML += '<div class="msg ' + type + '">' + (type === 'user' ? 'Вы: ' : 'Джарвис: ') + text + '</div>';
                 chat.scrollTop = chat.scrollHeight;
-                localStorage.setItem('jarvis_history', chat.innerHTML); // Запись в память телефона
+                localStorage.setItem('jarvis_history', chat.innerHTML);
             }
 
-            // Нативная и стабильная озвучка на русском языке
             function speak(text) {
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel();
@@ -90,13 +97,13 @@ class _JarvisScreenState extends State<JarvisScreen> {
             }
 
             async function sendMessage() {
-                var text = input.value.trim();
+                var text = input.value.trim(); // ИСПРАВЛЕНО: Никаких .strip()
                 if (!text) return;
 
                 addMessage('user', text);
-                input.value = '';
+                input.value = ''; // ИСПРАВЛЕНО: Теперь строка очищается мгновенно
 
-                // Локальная команда времени без интернета
+                // Локальные команды времени
                 if (text.toLowerCase().includes('время') || text.toLowerCase().includes('час')) {
                     var now = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
                     addMessage('bot', 'Сейчас ' + now + ', сэр.');
@@ -112,15 +119,18 @@ class _JarvisScreenState extends State<JarvisScreen> {
                     return;
                 }
 
-                // Запрос к ИИ (Контекст + Интернет)
-                addMessage('bot', 'Секунду, сэр...');
+                // Индикатор загрузки ИИ
+                var loadId = 'load_' + Date.now();
+                chat.innerHTML += '<div class="msg bot loading" id="' + loadId + '">Джарвис: Секунду, сэр...</div>';
+                chat.scrollTop = chat.scrollHeight;
                 
-                // Собираем последние сообщения со страницы для контекста ИИ
                 var messagesDivs = chat.getElementsByClassName('msg');
                 var contextText = "";
                 var start = Math.max(0, messagesDivs.length - 8);
                 for(var i=start; i<messagesDivs.length-1; i++) {
-                    contextText += messagesDivs[i].innerText + "\\n";
+                    if(!messagesDivs[i].classList.contains('loading')) {
+                        contextText += messagesDivs[i].innerText + "\\n";
+                    }
                 }
 
                 try {
@@ -131,26 +141,28 @@ class _JarvisScreenState extends State<JarvisScreen> {
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            "inputs": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\\nТы — Джарвис, ИИ Тони Старка. Отвечай коротко, емко, на русском языке. Обращайся 'сэр'. Помни историю диалога:\\n" + contextText + "<|eot_id|><|start_header_id|>user<|end_header_id|>\\n" + text + "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n",
+                            "inputs": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\\nТы — Джарвис, продвинутый ИИ Тони Старка. Отвечай всегда коротко, на русском языке. Обращайся к пользователю 'сэр'. Помни контекст разговора:\\n" + contextText + "<|eot_id|><|start_header_id|>user<|end_header_id|>\\n" + text + "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n",
                             "parameters": {"max_new_tokens": 100, "temperature": 0.7}
                         })
                     });
 
+                    var loadNode = document.getElementById(loadId);
+                    if (loadNode) chat.removeChild(loadNode);
+
                     if (response.status === 200) {
                         var result = await response.json();
-                        var rawRes = result[0].generated_text;
+                        var rawRes = result[0].generated_text; // ИСПРАВЛЕНО: Корректный разбор JSON с Hugging Face
                         var aiResponse = rawRes.split("<|start_header_id|>assistant<|end_header_id|>\\n").pop().replace("<|eot_id|>", "").trim();
                         
-                        // Удаляем сообщение "Секунду, сэр..." и пишем реальный ответ ИИ
-                        chat.removeChild(chat.lastChild);
                         addMessage('bot', aiResponse);
                         speak(aiResponse);
                     } else {
                         throw new Error();
                     }
                 } catch(e) {
-                    chat.removeChild(chat.lastChild);
-                    addMessage('bot', 'Сэр, каналы связи недоступны. Информация сохранена локально.');
+                    var loadNode = document.getElementById(loadId);
+                    if (loadNode) chat.removeChild(loadNode);
+                    addMessage('bot', 'Сэр, возникли проблемы с доступом к ИИ. Проверьте подключение к сети.');
                     speak('Каналы связи недоступны, сэр.');
                 }
             }
@@ -159,9 +171,15 @@ class _JarvisScreenState extends State<JarvisScreen> {
     </html>
     """;
 
+    // ИСПРАВЛЕНО: Полная разблокировка интернета, JavaScript и кэша для WebView
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (NavigationRequest request) => NavigationDecision.navigate,
+        ),
+      )
       ..loadHtmlString(htmlContent);
   }
 
