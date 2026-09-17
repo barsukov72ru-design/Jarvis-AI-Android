@@ -25,7 +25,7 @@ jobs:
       with:
         channel: 'stable'
 
-    # БЕЗОПАСНЫЙ ФИКС: Создаем проект рядом и копируем нужные папки
+    # БЕЗОПАСНЫЙ ФИКС: Создаем проект рядом и правильно распределяем файлы
     - name: Create Flutter Project Structure
       run: |
         # 1. Создаем чистый проект во временной папке снаружи репозитория
@@ -33,14 +33,20 @@ jobs:
         
         # 2. Переносим сгенерированную структуру Android к нам в репозиторий
         cp -r /tmp/clean_project/android ./
-        mkdir -p lib
         
-        # 3. Настраиваем принудительный minSdkVersion
+        # 3. Создаем папку lib и ПРИНУДИТЕЛЬНО переносим main.dart внутрь неё
+        mkdir -p lib
+        if [ -f "main.dart" ]; then
+          mv main.dart lib/main.dart
+          echo "✅ Файл main.dart успешно перенесен в папку lib/"
+        fi
+        
+        # 4. Настраиваем принудительный minSdkVersion
         echo "flutter.minSdkVersion=21" >> android/local.properties
         
-        # 4. Проверяем зависимости
+        # 5. Проверяем зависимости
         flutter pub get
-        echo "✅ Чистая структура Android успешно развернута без удаления файлов!"
+        echo "✅ Структура проекта полностью готова к сборке!"
 
     - name: Build APK
       run: flutter build apk --release
