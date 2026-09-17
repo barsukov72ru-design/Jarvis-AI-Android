@@ -1,0 +1,23 @@
+[tool.briefcase]
+project_name = "Jarvis AI"
+bundle = "org.test"
+version = "0.1"
+url = "https://test.org"
+author = "Тони Старк"
+author_email = "tony@stark.com"
+
+[tool.briefcase.app.jarvisapp]
+formal_name = "Jarvis AI"
+description = "Продвинутый ИИ-ассистент Джарвис"
+sources = ["main.py"]
+requires = [
+    "requests",
+    "urllib3",
+    "certifi",
+    "idna",
+    "charset-normalizer"
+]
+
+[tool.briefcase.app.jarvisapp.android]
+build_style = "gradle"
+permissions = ["INTERNET"]
