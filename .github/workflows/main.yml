@@ -25,12 +25,15 @@ jobs:
       with:
         channel: 'stable'
 
+    # Создаем структуру и жестко правим файлы конфигурации Android
     - name: Create Flutter Project Structure
       run: |
-        # Автоматически генерируем нативную структуру Android вокруг нашего main.dart
         flutter create --org com.stark . --empty -v
         rm lib/main.dart
         mv main.dart lib/main.dart
+        
+        # Фикс minSdkVersion для корректной работы flutter_tts
+        sed -i 's/minSdkVersion .*/minSdkVersion 21/g' android/app/build.gradle
 
     - name: Build APK
       run: flutter build apk --release
