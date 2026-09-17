@@ -1,41 +1,92 @@
-name: Build APK with Briefcase
+import toga
+from toga.style import Pack
+from toga.style.pack import COLUMN, ROW
+import requests
+from datetime import datetime
 
-on:
-  push:
-    branches: [ main, master ]
-  workflow_dispatch:
+class JarvisApp(toga.App):
+    def startup(self):
+        # Главный контейнер
+        main_box = toga.Box(style=Pack(orientation=COLUMN, padding=10))
 
-jobs:
-  build:
-    runs-on: ubuntu-22.04
+        # Заголовок системы
+        title_label = toga.Label(
+            "⚡ JARVIS AI SYSTEM ⚡",
+            style=Pack(padding=(0, 0, 10, 0), font_size=16, font_weight="bold")
+        )
+        main_box.add(title_label)
 
-    steps:
-    - uses: actions/checkout@v4
+        # Окно истории чата
+        self.chat_history = toga.MultilineTextInput(
+            readonly=True,
+            value="Джарвис: Джарвис на связи, сэр. Система активна.\n",
+            style=Pack(flex=1, padding=(0, 0, 10, 0))
+        )
+        main_box.add(self.chat_history)
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+        # Поле ввода и кнопка
+        input_box = toga.Box(style=Pack(orientation=ROW))
+        self.user_input = toga.TextInput(
+            placeholder="Введите команду...",
+            style=Pack(flex=1, padding=(0, 5, 0, 0))
+        )
+        send_button = toga.Button(
+            "Отправить",
+            on_press=self.process_command,
+            style=Pack(padding=0)
+        )
+        
+        input_box.add(self.user_input)
+        input_box.add(send_button)
+        main_box.add(input_box)
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+        self.main_window = toga.MainWindow(title=self.formal_name)
+        self.main_window.content = main_box
+        self.main_window.show()
 
-    - name: Install Briefcase
-      run: |
-        pip install --upgrade pip
-        pip install briefcase
+    def say(self, text):
+        self.chat_history.value += f"Джарвис: {text}\n"
 
-    # Создаем и компилируем Android проект без использования капризного Buildozer
-    - name: Package App for Android
-      run: |
-        briefcase create android --no-input
-        briefcase build android --no-input
+    def process_command(self, widget):
+        text = self.user_input.text.strip()
+        if not text:
+            return
+        
+        self.chat_history.value += f"\nВы: {text}\n"
+        self.user_input.text = ""
+        command_lower = text.lower()
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: Jarvis-APK
-        path: build/jarvisapp/android/gradle/app/build/outputs/apk/debug/*.apk
+        # Локальные команды
+        if "время" in command_lower or "который час" in command_lower:
+            now = datetime.now().strftime("%H:%M")
+            self.say(f"Сейчас {now}, сэр.")
+        elif "ютуб" in command_lower or "youtube" in command_lower:
+            self.say("Открываю Ютуб.")
+            self.app.paths.open("https://youtube.com")
+        else:
+            self.ask_ai(text)
+
+    def ask_ai(self, user_text):
+        # Наш рабочий быстрый API ИИ Llama-3
+        api_url = "https://huggingface.co"
+        headers = {"Authorization": "Bearer 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"} 
+        payload = {
+            "inputs": f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\nТы — Джарвис, продвинутый ИИ-ассистент Тони Старка. Отвечай всегда строго на русском языке, коротко и емко.<|eot_id|><|start_header_id|>user<|end_header_id|>\n{user_text}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n",
+            "parameters": {"max_new_tokens": 80, "temperature": 0.7}
+        }
+        try:
+            response = requests.post(api_url, json=payload, headers=headers, timeout=6)
+            if response.status_code == 200:
+                result = response.json()
+                if isinstance(result, list) and 'generated_text' in result:
+                    raw_res = result['generated_text']
+                    ai_response = raw_res.split("<|start_header_id|>assistant<|end_header_id|>\n")[-1].strip()
+                    ai_response = ai_response.replace("<|eot_id|>", "").strip()
+                    self.say(ai_response)
+                    return
+        except:
+            pass
+        self.say("Сэр, возникли проблемы со связью. Проверьте подключение.")
+
+def main():
+    return JarvisApp("Jarvis AI", "org.test.jarvisapp")
