@@ -1,5 +1,5 @@
 name: jarvis_ai
-description: Продвинутый ИИ-ассистент Джарвис на Flutter с полной памятью.
+description: Продвинутый ИИ-ассистент Джарвис на Flutter через стабильный WebView.
 version: 1.0.0+1
 
 environment:
@@ -8,9 +8,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.1.0                  # Для запросов к ИИ
-  flutter_tts: ^3.8.3           # Для озвучки голосом
-  shared_preferences: ^2.2.2    # ЖЕЛЕЗНАЯ ПАМЯТЬ ТЕЛЕФОНА
+  webview_flutter: ^4.4.2   # Самый стабильный официальный движок от Google
 
 flutter:
   uses-material-design: true
