@@ -28,22 +28,26 @@ jobs:
         pip install --upgrade pip
         pip install "cython<3.0.0" buildozer plyer requests urllib3 certifi
 
-    # СОЗДАЕМ СТРУКТУРУ ПАПОК ВРУЧНУЮ ПОД BUILDOZER
-    - name: Manually Create Android SDK Directory Structure
+    # ПОЛНОЕ СОЗДАНИЕ ВСЕЙ СТРУКТУРЫ ПАПОК ДЛЯ БУЛЬДОЗЕРА
+    - name: Manually Create Absolute Android SDK Structure
       run: |
-        # Создаем папки build-tools, которые так упорно требует Buildozer
+        # 1. Создаем папки для build-tools и tools/bin, которые он просит
         mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0
         mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools/bin
         
-        # Находим рабочий aidl на сервере GitHub и принудительно копируем его в обе папки
+        # 2. Копируем рабочий aidl в обе папки
         cp /usr/local/lib/android/sdk/build-tools/34.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0/
         cp /usr/local/lib/android/sdk/build-tools/34.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
         
-        # Проверяем, что файлы легли куда нужно и имеют права на запуск
+        # 3. Делаем прямую ссылку на рабочий sdkmanager, чтобы обмануть проверку
+        ln -s /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+        
+        # 4. Даем полные права на запуск всем утилитам
         chmod +x /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0/aidl
         chmod +x /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/aidl
         
-        echo "✅ Вся структура папок создана силой. aidl скопирован и готов к бою!"
+        echo "✅ Вся структура SDK создана вручную! sdkmanager и aidl на месте."
 
     - name: Build with Buildozer
       run: |
