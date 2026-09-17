@@ -1,4 +1,4 @@
-name: Build APK with Briefcase
+name: Build Flutter APK
 
 on:
   push:
@@ -9,34 +9,34 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Set up JDK 17
+    - name: Set up Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Install Briefcase
-      run: |
-        pip install --upgrade pip
-        pip install briefcase
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
 
-    - name: Package App for Android
+    - name: Create Flutter Project Structure
       run: |
-        briefcase create android --no-input
-        briefcase build android --no-input
+        # Автоматически генерируем нативную структуру Android вокруг нашего main.dart
+        flutter create --org com.stark . --empty -v
+        rm lib/main.dart
+        mv main.dart lib/main.dart
+
+    - name: Build APK
+      run: flutter build apk --release
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: Jarvis-APK
-        path: build/jarvisapp/android/gradle/app/build/outputs/apk/debug/*.apk
+        name: Jarvis-Flutter-APK
+        path: build/app/outputs/flutter-apk/app-release.apk
