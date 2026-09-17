@@ -25,27 +25,27 @@ jobs:
       with:
         channel: 'stable'
 
-    # НАДЕЖНЫЙ ФИКС: Очищаем остатки старых файлов и разворачиваем чистую структуру
+    # ХИТРЫЙ ФИКС: Принудительно заставляем создать именно Android-платформу
     - name: Create Flutter Project Structure
       run: |
-        # Временно прячем наши файлы во внешнюю память, чтобы они не мешали flutter create
+        # Временно прячем наши файлы
         mkdir /tmp/jarvis_backup
         mv main.dart pubspec.yaml /tmp/jarvis_backup/
         
-        # Полностью вычищаем текущую папку репозитория
+        # Полностью вычищаем текущую папку
         rm -rf * .github
         
-        # Создаем абсолютно новый чистый нативный проект Android/Flutter
-        flutter create --org com.stark --project-name jarvis_ai . -v
+        # ЖЕСТКИЙ ФЛАГ: --platforms=android заставит создать папку android на Linux-сервере
+        flutter create --org com.stark --project-name jarvis_ai --platforms=android . -v
         
-        # Возвращаем наши файлы обратно на свои места в чистый проект
+        # Возвращаем наши файлы обратно
         rm lib/main.dart pubspec.yaml
         mv /tmp/jarvis_backup/main.dart lib/main.dart
         mv /tmp/jarvis_backup/pubspec.yaml ./pubspec.yaml
         
-        # Теперь папка android гарантированно существует. Повышаем minSdkVersion до 21
+        # Теперь файл точно на месте. Фиксим minSdkVersion
         sed -i 's/minSdkVersion .*/minSdkVersion 21/g' android/app/build.gradle
-        echo "✅ Структура Android проекта успешно создана, фикс minSdkVersion применен!"
+        echo "✅ Папка android создана, фикс minSdkVersion применен успешно!"
 
     - name: Build APK
       run: flutter build apk --release
